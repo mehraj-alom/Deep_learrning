@@ -1,1 +1,1009 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.11.13","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"nvidiaTeslaT4","dataSources":[{"sourceId":12542882,"sourceType":"datasetVersion","datasetId":7918807}],"dockerImageVersionId":31090,"isInternetEnabled":true,"language":"python","sourceType":"notebook","isGpuEnabled":true}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# This Python 3 environment comes with many helpful analytics libraries installed\n# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n# For example, here's several helpful packages to load\n\nimport numpy as np # linear algebra\nimport pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n\n# Input data files are available in the read-only \"../input/\" directory\n# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n\nimport os\nfor dirname, _, filenames in os.walk('/kaggle/input'):\n    for filename in filenames:\n        print(os.path.join(dirname, filename))\n\n# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session","metadata":{"_uuid":"8f2839f25d086af736a60e9eeb907d3b93b6e0e5","_cell_guid":"b1076dfc-b9ad-4769-8c92-a6c4dae69d19","trusted":true},"outputs":[],"execution_count":null},{"cell_type":"code","source":"!pip install gensim\n!pip install python-Levenshtein","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:23:32.709915Z","iopub.execute_input":"2025-07-22T09:23:32.710643Z","iopub.status.idle":"2025-07-22T09:23:47.869869Z","shell.execute_reply.started":"2025-07-22T09:23:32.710618Z","shell.execute_reply":"2025-07-22T09:23:47.869183Z"}},"outputs":[{"name":"stdout","text":"Requirement already satisfied: gensim in /usr/local/lib/python3.11/dist-packages (4.3.3)\nRequirement already satisfied: numpy<2.0,>=1.18.5 in /usr/local/lib/python3.11/dist-packages (from gensim) (1.26.4)\nCollecting scipy<1.14.0,>=1.7.0 (from gensim)\n  Downloading scipy-1.13.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (60 kB)\n\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m60.6/60.6 kB\u001b[0m \u001b[31m2.4 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n\u001b[?25hRequirement already satisfied: smart-open>=1.8.1 in /usr/local/lib/python3.11/dist-packages (from gensim) (7.1.0)\nRequirement already satisfied: mkl_fft in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (1.3.8)\nRequirement already satisfied: mkl_random in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (1.2.4)\nRequirement already satisfied: mkl_umath in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (0.1.1)\nRequirement already satisfied: mkl in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2025.2.0)\nRequirement already satisfied: tbb4py in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2022.2.0)\nRequirement already satisfied: mkl-service in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2.4.1)\nRequirement already satisfied: wrapt in /usr/local/lib/python3.11/dist-packages (from smart-open>=1.8.1->gensim) (1.17.2)\nRequirement already satisfied: intel-openmp<2026,>=2024 in /usr/local/lib/python3.11/dist-packages (from mkl->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\nRequirement already satisfied: tbb==2022.* in /usr/local/lib/python3.11/dist-packages (from mkl->numpy<2.0,>=1.18.5->gensim) (2022.2.0)\nRequirement already satisfied: tcmlib==1.* in /usr/local/lib/python3.11/dist-packages (from tbb==2022.*->mkl->numpy<2.0,>=1.18.5->gensim) (1.4.0)\nRequirement already satisfied: intel-cmplr-lib-rt in /usr/local/lib/python3.11/dist-packages (from mkl_umath->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\nRequirement already satisfied: intel-cmplr-lib-ur==2024.2.0 in /usr/local/lib/python3.11/dist-packages (from intel-openmp<2026,>=2024->mkl->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\nDownloading scipy-1.13.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (38.6 MB)\n\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m38.6/38.6 MB\u001b[0m \u001b[31m49.0 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m:00:01\u001b[0m00:01\u001b[0m\n\u001b[?25hInstalling collected packages: scipy\n  Attempting uninstall: scipy\n    Found existing installation: scipy 1.15.3\n    Uninstalling scipy-1.15.3:\n      Successfully uninstalled scipy-1.15.3\n\u001b[31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\ncesium 0.12.4 requires numpy<3.0,>=2.0, but you have numpy 1.26.4 which is incompatible.\ntsfresh 0.21.0 requires scipy>=1.14.0; python_version >= \"3.10\", but you have scipy 1.13.1 which is incompatible.\ndopamine-rl 4.1.2 requires gymnasium>=1.0.0, but you have gymnasium 0.29.0 which is incompatible.\nimbalanced-learn 0.13.0 requires scikit-learn<2,>=1.3.2, but you have scikit-learn 1.2.2 which is incompatible.\nplotnine 0.14.5 requires matplotlib>=3.8.0, but you have matplotlib 3.7.2 which is incompatible.\nmlxtend 0.23.4 requires scikit-learn>=1.3.1, but you have scikit-learn 1.2.2 which is incompatible.\u001b[0m\u001b[31m\n\u001b[0mSuccessfully installed scipy-1.13.1\nCollecting python-Levenshtein\n  Downloading python_levenshtein-0.27.1-py3-none-any.whl.metadata (3.7 kB)\nCollecting Levenshtein==0.27.1 (from python-Levenshtein)\n  Downloading levenshtein-0.27.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (3.6 kB)\nCollecting rapidfuzz<4.0.0,>=3.9.0 (from Levenshtein==0.27.1->python-Levenshtein)\n  Downloading rapidfuzz-3.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (12 kB)\nDownloading python_levenshtein-0.27.1-py3-none-any.whl (9.4 kB)\nDownloading levenshtein-0.27.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (161 kB)\n\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m161.7/161.7 kB\u001b[0m \u001b[31m4.2 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0ma \u001b[36m0:00:01\u001b[0m\n\u001b[?25hDownloading rapidfuzz-3.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)\n\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m3.1/3.1 MB\u001b[0m \u001b[31m42.0 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m00:01\u001b[0m00:01\u001b[0m\n\u001b[?25hInstalling collected packages: rapidfuzz, Levenshtein, python-Levenshtein\nSuccessfully installed Levenshtein-0.27.1 python-Levenshtein-0.27.1 rapidfuzz-3.13.0\n","output_type":"stream"}],"execution_count":1},{"cell_type":"code","source":"import gensim\nimport pandas as pd","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:55:08.292243Z","iopub.execute_input":"2025-07-22T09:55:08.292767Z","iopub.status.idle":"2025-07-22T09:55:08.296177Z","shell.execute_reply.started":"2025-07-22T09:55:08.292741Z","shell.execute_reply":"2025-07-22T09:55:08.295361Z"}},"outputs":[],"execution_count":5},{"cell_type":"code","source":"df = pd.read_csv(\"/kaggle/input/amazon-review/amazon_reviews.csv\")\ndf.head()","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:55:10.435276Z","iopub.execute_input":"2025-07-22T09:55:10.435552Z","iopub.status.idle":"2025-07-22T09:55:32.585739Z","shell.execute_reply.started":"2025-07-22T09:55:10.435533Z","shell.execute_reply":"2025-07-22T09:55:32.585031Z"}},"outputs":[{"execution_count":6,"output_type":"execute_result","data":{"text/plain":"          userName  verified  \\\n0  Amazon Customer      True   \n1            Carla      True   \n2           Jaclyn      True   \n3     Christinne M     False   \n4            Sandy      True   \n\n                                            itemName  \\\n0  Toblerone Swiss Milk Chocolate Bar, Crunchy Sa...   \n1  Prince of Peace Organic Tea, Oolong, 100 Tea Bags   \n2  Pet Champion Adjustable No-Pull Harness, Colla...   \n3  Koh-I-Noor Progresso Woodless Colored 24-Penci...   \n4  Parker Urban Premium Ebony Metal Chiseled, Bal...   \n\n                                         description  \\\n0  [\"Made from deliciously decadent ingredients, ...   \n1  ['Prince of Peace Enterprises, Inc., founded i...   \n2  [\"The Pet Champion Large/ Extra Large 22-36 in...   \n3  ['Koh-I-Noor Progresso Woodless Colored 24-Pen...   \n4  [\"Stunning craftsmanship based on a classic st...   \n\n                                               image            brand  \\\n0  ['https://images-na.ssl-images-amazon.com/imag...        Toblerone   \n1  ['https://images-na.ssl-images-amazon.com/imag...  Prince Of Peace   \n2  ['https://images-na.ssl-images-amazon.com/imag...     Pet Champion   \n3  ['https://images-na.ssl-images-amazon.com/imag...       KOH-I-NOOR   \n4  ['https://images-na.ssl-images-amazon.com/imag...           Parker   \n\n                                             feature  \\\n0                                                 []   \n1                                                 []   \n2  ['Features Bright Pink Lemonade pattern', 'Dua...   \n3  ['Rich, pigmented, solid color encased in lacq...   \n4  ['Ebony black with metallic highlights and a g...   \n\n                   category   price  rating  reviewTime  \\\n0              Prime_Pantry   $1.63     5.0  2018-01-01   \n1  Grocery_and_Gourmet_Food   $6.40     5.0  2018-01-01   \n2              Pet_Supplies   $7.99     5.0  2018-01-01   \n3    Arts_Crafts_and_Sewing  $14.18     5.0  2018-01-01   \n4           Office_Products     NaN     5.0  2018-01-01   \n\n                                             summary  \\\n0                                         Five Stars   \n1                                         Five Stars   \n2  she has an odd shape chest and her pull over h...   \n3                                           Loving!!   \n4                                    I love this pen   \n\n                                          reviewText  vote  \n0           super smooth and yummy with crunchy bits     0  \n1                               Perfect for kombucha     0  \n2  Finally a harness that fits my puppy. I really...     0  \n3  I LOVE THEM!! I bought them at Micheals our of...     0  \n4  I love this pen! I love the shape of it, the f...     0  ","text/html":"<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>userName</th>\n      <th>verified</th>\n      <th>itemName</th>\n      <th>description</th>\n      <th>image</th>\n      <th>brand</th>\n      <th>feature</th>\n      <th>category</th>\n      <th>price</th>\n      <th>rating</th>\n      <th>reviewTime</th>\n      <th>summary</th>\n      <th>reviewText</th>\n      <th>vote</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>Amazon Customer</td>\n      <td>True</td>\n      <td>Toblerone Swiss Milk Chocolate Bar, Crunchy Sa...</td>\n      <td>[\"Made from deliciously decadent ingredients, ...</td>\n      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n      <td>Toblerone</td>\n      <td>[]</td>\n      <td>Prime_Pantry</td>\n      <td>$1.63</td>\n      <td>5.0</td>\n      <td>2018-01-01</td>\n      <td>Five Stars</td>\n      <td>super smooth and yummy with crunchy bits</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>Carla</td>\n      <td>True</td>\n      <td>Prince of Peace Organic Tea, Oolong, 100 Tea Bags</td>\n      <td>['Prince of Peace Enterprises, Inc., founded i...</td>\n      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n      <td>Prince Of Peace</td>\n      <td>[]</td>\n      <td>Grocery_and_Gourmet_Food</td>\n      <td>$6.40</td>\n      <td>5.0</td>\n      <td>2018-01-01</td>\n      <td>Five Stars</td>\n      <td>Perfect for kombucha</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>Jaclyn</td>\n      <td>True</td>\n      <td>Pet Champion Adjustable No-Pull Harness, Colla...</td>\n      <td>[\"The Pet Champion Large/ Extra Large 22-36 in...</td>\n      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n      <td>Pet Champion</td>\n      <td>['Features Bright Pink Lemonade pattern', 'Dua...</td>\n      <td>Pet_Supplies</td>\n      <td>$7.99</td>\n      <td>5.0</td>\n      <td>2018-01-01</td>\n      <td>she has an odd shape chest and her pull over h...</td>\n      <td>Finally a harness that fits my puppy. I really...</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>Christinne M</td>\n      <td>False</td>\n      <td>Koh-I-Noor Progresso Woodless Colored 24-Penci...</td>\n      <td>['Koh-I-Noor Progresso Woodless Colored 24-Pen...</td>\n      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n      <td>KOH-I-NOOR</td>\n      <td>['Rich, pigmented, solid color encased in lacq...</td>\n      <td>Arts_Crafts_and_Sewing</td>\n      <td>$14.18</td>\n      <td>5.0</td>\n      <td>2018-01-01</td>\n      <td>Loving!!</td>\n      <td>I LOVE THEM!! I bought them at Micheals our of...</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>Sandy</td>\n      <td>True</td>\n      <td>Parker Urban Premium Ebony Metal Chiseled, Bal...</td>\n      <td>[\"Stunning craftsmanship based on a classic st...</td>\n      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n      <td>Parker</td>\n      <td>['Ebony black with metallic highlights and a g...</td>\n      <td>Office_Products</td>\n      <td>NaN</td>\n      <td>5.0</td>\n      <td>2018-01-01</td>\n      <td>I love this pen</td>\n      <td>I love this pen! I love the shape of it, the f...</td>\n      <td>0</td>\n    </tr>\n  </tbody>\n</table>\n</div>"},"metadata":{}}],"execution_count":6},{"cell_type":"code","source":"df.shape","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:59:15.572935Z","iopub.execute_input":"2025-07-22T09:59:15.573221Z","iopub.status.idle":"2025-07-22T09:59:15.578590Z","shell.execute_reply.started":"2025-07-22T09:59:15.573200Z","shell.execute_reply":"2025-07-22T09:59:15.577925Z"}},"outputs":[{"execution_count":12,"output_type":"execute_result","data":{"text/plain":"(550731, 14)"},"metadata":{}}],"execution_count":12},{"cell_type":"code","source":"df.isnull().sum()","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:58:33.974224Z","iopub.execute_input":"2025-07-22T09:58:33.974478Z","iopub.status.idle":"2025-07-22T09:58:34.331876Z","shell.execute_reply.started":"2025-07-22T09:58:33.974457Z","shell.execute_reply":"2025-07-22T09:58:34.331291Z"}},"outputs":[{"execution_count":9,"output_type":"execute_result","data":{"text/plain":"userName         133\nverified           0\nitemName           1\ndescription        8\nimage              0\nbrand           3872\nfeature            0\ncategory           0\nprice          74334\nrating             0\nreviewTime         0\nsummary          243\nreviewText       428\nvote               0\ndtype: int64"},"metadata":{}}],"execution_count":9},{"cell_type":"code","source":"df = df[df.reviewText.notnull()]","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:58:55.876954Z","iopub.execute_input":"2025-07-22T09:58:55.877530Z","iopub.status.idle":"2025-07-22T09:58:56.061905Z","shell.execute_reply.started":"2025-07-22T09:58:55.877506Z","shell.execute_reply":"2025-07-22T09:58:56.061333Z"}},"outputs":[],"execution_count":10},{"cell_type":"code","source":"review_text = df.reviewText.apply(gensim.utils.simple_preprocess)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T09:59:32.958716Z","iopub.execute_input":"2025-07-22T09:59:32.959417Z","iopub.status.idle":"2025-07-22T09:59:51.441374Z","shell.execute_reply.started":"2025-07-22T09:59:32.959389Z","shell.execute_reply":"2025-07-22T09:59:51.440773Z"}},"outputs":[],"execution_count":14},{"cell_type":"code","source":"review_text","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:00:11.045385Z","iopub.execute_input":"2025-07-22T10:00:11.045931Z","iopub.status.idle":"2025-07-22T10:00:11.053496Z","shell.execute_reply.started":"2025-07-22T10:00:11.045905Z","shell.execute_reply":"2025-07-22T10:00:11.052782Z"}},"outputs":[{"execution_count":15,"output_type":"execute_result","data":{"text/plain":"0          [super, smooth, and, yummy, with, crunchy, bits]\n1                                  [perfect, for, kombucha]\n2         [finally, harness, that, fits, my, puppy, real...\n3         [love, them, bought, them, at, micheals, our, ...\n4         [love, this, pen, love, the, shape, of, it, th...\n                                ...                        \n551154                     [cheap, price, but, weak, chain]\n551155                                   [great, deck, box]\n551156    [putting, these, in, my, weather, station, ant...\n551157    [this, is, nice, quality, grilling, table, whe...\n551158    [this, is, nice, variety, pack, for, the, whol...\nName: reviewText, Length: 550731, dtype: object"},"metadata":{}}],"execution_count":15},{"cell_type":"code","source":"review_text.loc[0]","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:00:21.825654Z","iopub.execute_input":"2025-07-22T10:00:21.825993Z","iopub.status.idle":"2025-07-22T10:00:21.846242Z","shell.execute_reply.started":"2025-07-22T10:00:21.825971Z","shell.execute_reply":"2025-07-22T10:00:21.845653Z"}},"outputs":[{"execution_count":16,"output_type":"execute_result","data":{"text/plain":"['super', 'smooth', 'and', 'yummy', 'with', 'crunchy', 'bits']"},"metadata":{}}],"execution_count":16},{"cell_type":"code","source":"df.reviewText.loc[0]","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:00:48.180709Z","iopub.execute_input":"2025-07-22T10:00:48.180988Z","iopub.status.idle":"2025-07-22T10:00:48.185946Z","shell.execute_reply.started":"2025-07-22T10:00:48.180965Z","shell.execute_reply":"2025-07-22T10:00:48.185433Z"}},"outputs":[{"execution_count":17,"output_type":"execute_result","data":{"text/plain":"'super smooth and yummy with crunchy bits'"},"metadata":{}}],"execution_count":17},{"cell_type":"code","source":"model = gensim.models.Word2Vec(\n    window=5,\n    min_count=2,\n    workers=10,\n)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:08:18.688908Z","iopub.execute_input":"2025-07-22T10:08:18.689250Z","iopub.status.idle":"2025-07-22T10:08:18.697330Z","shell.execute_reply.started":"2025-07-22T10:08:18.689230Z","shell.execute_reply":"2025-07-22T10:08:18.696621Z"}},"outputs":[],"execution_count":28},{"cell_type":"code","source":"model.build_vocab(review_text, progress_per=500)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:08:20.990908Z","iopub.execute_input":"2025-07-22T10:08:20.991474Z","iopub.status.idle":"2025-07-22T10:08:23.704888Z","shell.execute_reply.started":"2025-07-22T10:08:20.991451Z","shell.execute_reply":"2025-07-22T10:08:23.704025Z"}},"outputs":[],"execution_count":29},{"cell_type":"code","source":"model.train(review_text, total_examples=model.corpus_count, epochs=20)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:08:28.920531Z","iopub.execute_input":"2025-07-22T10:08:28.920865Z","iopub.status.idle":"2025-07-22T10:12:17.556501Z","shell.execute_reply.started":"2025-07-22T10:08:28.920836Z","shell.execute_reply":"2025-07-22T10:12:17.555809Z"}},"outputs":[{"execution_count":30,"output_type":"execute_result","data":{"text/plain":"(250033650, 327959400)"},"metadata":{}}],"execution_count":30},{"cell_type":"code","source":"model.corpus_count == len(review_text)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:12:25.875238Z","iopub.execute_input":"2025-07-22T10:12:25.875526Z","iopub.status.idle":"2025-07-22T10:12:25.880449Z","shell.execute_reply.started":"2025-07-22T10:12:25.875505Z","shell.execute_reply":"2025-07-22T10:12:25.879900Z"}},"outputs":[{"execution_count":31,"output_type":"execute_result","data":{"text/plain":"True"},"metadata":{}}],"execution_count":31},{"cell_type":"code","source":"model.wv.most_similar(\"shape\")","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:12:29.317631Z","iopub.execute_input":"2025-07-22T10:12:29.317867Z","iopub.status.idle":"2025-07-22T10:12:29.331707Z","shell.execute_reply.started":"2025-07-22T10:12:29.317850Z","shell.execute_reply":"2025-07-22T10:12:29.330973Z"}},"outputs":[{"execution_count":32,"output_type":"execute_result","data":{"text/plain":"[('condition', 0.60439532995224),\n ('shapes', 0.4964536428451538),\n ('design', 0.48763447999954224),\n ('position', 0.48600155115127563),\n ('structure', 0.46842581033706665),\n ('creases', 0.4474601745605469),\n ('tact', 0.44644472002983093),\n ('grooves', 0.4451344311237335),\n ('triangle', 0.4447516202926636),\n ('grip', 0.44463664293289185)]"},"metadata":{}}],"execution_count":32},{"cell_type":"code","source":"model.wv.similarity('great', 'awesome')","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:13:26.676488Z","iopub.execute_input":"2025-07-22T10:13:26.676954Z","iopub.status.idle":"2025-07-22T10:13:26.682165Z","shell.execute_reply.started":"2025-07-22T10:13:26.676929Z","shell.execute_reply":"2025-07-22T10:13:26.681599Z"}},"outputs":[{"execution_count":33,"output_type":"execute_result","data":{"text/plain":"0.77892137"},"metadata":{}}],"execution_count":33},{"cell_type":"code","source":"model.wv.similarity(\"good\",\"great\")","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:14:57.919528Z","iopub.execute_input":"2025-07-22T10:14:57.920222Z","iopub.status.idle":"2025-07-22T10:14:57.925001Z","shell.execute_reply.started":"2025-07-22T10:14:57.920195Z","shell.execute_reply":"2025-07-22T10:14:57.924312Z"}},"outputs":[{"execution_count":37,"output_type":"execute_result","data":{"text/plain":"0.8030225"},"metadata":{}}],"execution_count":37},{"cell_type":"code","source":"top_synonym = model.wv.most_similar('wow', topn=1)\nprint(top_synonym)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:15:57.995457Z","iopub.execute_input":"2025-07-22T10:15:57.995698Z","iopub.status.idle":"2025-07-22T10:15:58.001805Z","shell.execute_reply.started":"2025-07-22T10:15:57.995681Z","shell.execute_reply":"2025-07-22T10:15:58.001169Z"}},"outputs":[{"name":"stdout","text":"[('omg', 0.7531624436378479)]\n","output_type":"stream"}],"execution_count":40},{"cell_type":"code","source":"model.save(\"word2vec_model.model\")","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-07-22T10:17:11.960697Z","iopub.execute_input":"2025-07-22T10:17:11.961323Z","iopub.status.idle":"2025-07-22T10:17:12.036990Z","shell.execute_reply.started":"2025-07-22T10:17:11.961299Z","shell.execute_reply":"2025-07-22T10:17:12.036454Z"}},"outputs":[],"execution_count":41},{"cell_type":"code","source":"# from gensim.models import Word2Vec\n\n# # Load the full model\n# model = Word2Vec.load(\"word2vec_model.model\")","metadata":{"trusted":true},"outputs":[],"execution_count":null}]}
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "228759e9",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:21:17.435405Z",
+     "iopub.status.busy": "2025-07-22T10:21:17.435139Z",
+     "iopub.status.idle": "2025-07-22T10:21:19.408719Z",
+     "shell.execute_reply": "2025-07-22T10:21:19.407668Z"
+    },
+    "papermill": {
+     "duration": 1.979436,
+     "end_time": "2025-07-22T10:21:19.410041",
+     "exception": false,
+     "start_time": "2025-07-22T10:21:17.430605",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/amazon-review/amazon_reviews.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "028425c8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:21:19.417400Z",
+     "iopub.status.busy": "2025-07-22T10:21:19.417065Z",
+     "iopub.status.idle": "2025-07-22T10:21:38.390588Z",
+     "shell.execute_reply": "2025-07-22T10:21:38.389606Z"
+    },
+    "papermill": {
+     "duration": 18.978654,
+     "end_time": "2025-07-22T10:21:38.392124",
+     "exception": false,
+     "start_time": "2025-07-22T10:21:19.413470",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Requirement already satisfied: gensim in /usr/local/lib/python3.11/dist-packages (4.3.3)\r\n",
+      "Requirement already satisfied: numpy<2.0,>=1.18.5 in /usr/local/lib/python3.11/dist-packages (from gensim) (1.26.4)\r\n",
+      "Collecting scipy<1.14.0,>=1.7.0 (from gensim)\r\n",
+      "  Downloading scipy-1.13.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (60 kB)\r\n",
+      "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m60.6/60.6 kB\u001b[0m \u001b[31m2.1 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n",
+      "\u001b[?25hRequirement already satisfied: smart-open>=1.8.1 in /usr/local/lib/python3.11/dist-packages (from gensim) (7.1.0)\r\n",
+      "Requirement already satisfied: mkl_fft in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (1.3.8)\r\n",
+      "Requirement already satisfied: mkl_random in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (1.2.4)\r\n",
+      "Requirement already satisfied: mkl_umath in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (0.1.1)\r\n",
+      "Requirement already satisfied: mkl in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2025.2.0)\r\n",
+      "Requirement already satisfied: tbb4py in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2022.2.0)\r\n",
+      "Requirement already satisfied: mkl-service in /usr/local/lib/python3.11/dist-packages (from numpy<2.0,>=1.18.5->gensim) (2.4.1)\r\n",
+      "Requirement already satisfied: wrapt in /usr/local/lib/python3.11/dist-packages (from smart-open>=1.8.1->gensim) (1.17.2)\r\n",
+      "Requirement already satisfied: intel-openmp<2026,>=2024 in /usr/local/lib/python3.11/dist-packages (from mkl->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\r\n",
+      "Requirement already satisfied: tbb==2022.* in /usr/local/lib/python3.11/dist-packages (from mkl->numpy<2.0,>=1.18.5->gensim) (2022.2.0)\r\n",
+      "Requirement already satisfied: tcmlib==1.* in /usr/local/lib/python3.11/dist-packages (from tbb==2022.*->mkl->numpy<2.0,>=1.18.5->gensim) (1.4.0)\r\n",
+      "Requirement already satisfied: intel-cmplr-lib-rt in /usr/local/lib/python3.11/dist-packages (from mkl_umath->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\r\n",
+      "Requirement already satisfied: intel-cmplr-lib-ur==2024.2.0 in /usr/local/lib/python3.11/dist-packages (from intel-openmp<2026,>=2024->mkl->numpy<2.0,>=1.18.5->gensim) (2024.2.0)\r\n",
+      "Downloading scipy-1.13.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (38.6 MB)\r\n",
+      "\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m38.6/38.6 MB\u001b[0m \u001b[31m51.7 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n",
+      "\u001b[?25hInstalling collected packages: scipy\r\n",
+      "  Attempting uninstall: scipy\r\n",
+      "    Found existing installation: scipy 1.15.3\r\n",
+      "    Uninstalling scipy-1.15.3:\r\n",
+      "      Successfully uninstalled scipy-1.15.3\r\n",
+      "\u001b[31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\r\n",
+      "cesium 0.12.4 requires numpy<3.0,>=2.0, but you have numpy 1.26.4 which is incompatible.\r\n",
+      "tsfresh 0.21.0 requires scipy>=1.14.0; python_version >= \"3.10\", but you have scipy 1.13.1 which is incompatible.\r\n",
+      "dopamine-rl 4.1.2 requires gymnasium>=1.0.0, but you have gymnasium 0.29.0 which is incompatible.\r\n",
+      "imbalanced-learn 0.13.0 requires scikit-learn<2,>=1.3.2, but you have scikit-learn 1.2.2 which is incompatible.\r\n",
+      "plotnine 0.14.5 requires matplotlib>=3.8.0, but you have matplotlib 3.7.2 which is incompatible.\r\n",
+      "mlxtend 0.23.4 requires scikit-learn>=1.3.1, but you have scikit-learn 1.2.2 which is incompatible.\u001b[0m\u001b[31m\r\n",
+      "\u001b[0mSuccessfully installed scipy-1.13.1\r\n",
+      "Collecting python-Levenshtein\r\n",
+      "  Downloading python_levenshtein-0.27.1-py3-none-any.whl.metadata (3.7 kB)\r\n",
+      "Collecting Levenshtein==0.27.1 (from python-Levenshtein)\r\n",
+      "  Downloading levenshtein-0.27.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (3.6 kB)\r\n",
+      "Collecting rapidfuzz<4.0.0,>=3.9.0 (from Levenshtein==0.27.1->python-Levenshtein)\r\n",
+      "  Downloading rapidfuzz-3.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (12 kB)\r\n",
+      "Downloading python_levenshtein-0.27.1-py3-none-any.whl (9.4 kB)\r\n",
+      "Downloading levenshtein-0.27.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (161 kB)\r\n",
+      "\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m161.7/161.7 kB\u001b[0m \u001b[31m4.1 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n",
+      "\u001b[?25hDownloading rapidfuzz-3.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)\r\n",
+      "\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m3.1/3.1 MB\u001b[0m \u001b[31m40.3 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n",
+      "\u001b[?25hInstalling collected packages: rapidfuzz, Levenshtein, python-Levenshtein\r\n",
+      "Successfully installed Levenshtein-0.27.1 python-Levenshtein-0.27.1 rapidfuzz-3.13.0\r\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install gensim\n",
+    "!pip install python-Levenshtein"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "7788113e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:21:38.402434Z",
+     "iopub.status.busy": "2025-07-22T10:21:38.401650Z",
+     "iopub.status.idle": "2025-07-22T10:21:55.662046Z",
+     "shell.execute_reply": "2025-07-22T10:21:55.661231Z"
+    },
+    "papermill": {
+     "duration": 17.266747,
+     "end_time": "2025-07-22T10:21:55.663440",
+     "exception": false,
+     "start_time": "2025-07-22T10:21:38.396693",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import gensim\n",
+    "import pandas as pd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "6c1bb25c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:21:55.673370Z",
+     "iopub.status.busy": "2025-07-22T10:21:55.672610Z",
+     "iopub.status.idle": "2025-07-22T10:22:17.309820Z",
+     "shell.execute_reply": "2025-07-22T10:22:17.309032Z"
+    },
+    "papermill": {
+     "duration": 21.643118,
+     "end_time": "2025-07-22T10:22:17.310954",
+     "exception": false,
+     "start_time": "2025-07-22T10:21:55.667836",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>userName</th>\n",
+       "      <th>verified</th>\n",
+       "      <th>itemName</th>\n",
+       "      <th>description</th>\n",
+       "      <th>image</th>\n",
+       "      <th>brand</th>\n",
+       "      <th>feature</th>\n",
+       "      <th>category</th>\n",
+       "      <th>price</th>\n",
+       "      <th>rating</th>\n",
+       "      <th>reviewTime</th>\n",
+       "      <th>summary</th>\n",
+       "      <th>reviewText</th>\n",
+       "      <th>vote</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Amazon Customer</td>\n",
+       "      <td>True</td>\n",
+       "      <td>Toblerone Swiss Milk Chocolate Bar, Crunchy Sa...</td>\n",
+       "      <td>[\"Made from deliciously decadent ingredients, ...</td>\n",
+       "      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n",
+       "      <td>Toblerone</td>\n",
+       "      <td>[]</td>\n",
+       "      <td>Prime_Pantry</td>\n",
+       "      <td>$1.63</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>2018-01-01</td>\n",
+       "      <td>Five Stars</td>\n",
+       "      <td>super smooth and yummy with crunchy bits</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Carla</td>\n",
+       "      <td>True</td>\n",
+       "      <td>Prince of Peace Organic Tea, Oolong, 100 Tea Bags</td>\n",
+       "      <td>['Prince of Peace Enterprises, Inc., founded i...</td>\n",
+       "      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n",
+       "      <td>Prince Of Peace</td>\n",
+       "      <td>[]</td>\n",
+       "      <td>Grocery_and_Gourmet_Food</td>\n",
+       "      <td>$6.40</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>2018-01-01</td>\n",
+       "      <td>Five Stars</td>\n",
+       "      <td>Perfect for kombucha</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Jaclyn</td>\n",
+       "      <td>True</td>\n",
+       "      <td>Pet Champion Adjustable No-Pull Harness, Colla...</td>\n",
+       "      <td>[\"The Pet Champion Large/ Extra Large 22-36 in...</td>\n",
+       "      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n",
+       "      <td>Pet Champion</td>\n",
+       "      <td>['Features Bright Pink Lemonade pattern', 'Dua...</td>\n",
+       "      <td>Pet_Supplies</td>\n",
+       "      <td>$7.99</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>2018-01-01</td>\n",
+       "      <td>she has an odd shape chest and her pull over h...</td>\n",
+       "      <td>Finally a harness that fits my puppy. I really...</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Christinne M</td>\n",
+       "      <td>False</td>\n",
+       "      <td>Koh-I-Noor Progresso Woodless Colored 24-Penci...</td>\n",
+       "      <td>['Koh-I-Noor Progresso Woodless Colored 24-Pen...</td>\n",
+       "      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n",
+       "      <td>KOH-I-NOOR</td>\n",
+       "      <td>['Rich, pigmented, solid color encased in lacq...</td>\n",
+       "      <td>Arts_Crafts_and_Sewing</td>\n",
+       "      <td>$14.18</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>2018-01-01</td>\n",
+       "      <td>Loving!!</td>\n",
+       "      <td>I LOVE THEM!! I bought them at Micheals our of...</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Sandy</td>\n",
+       "      <td>True</td>\n",
+       "      <td>Parker Urban Premium Ebony Metal Chiseled, Bal...</td>\n",
+       "      <td>[\"Stunning craftsmanship based on a classic st...</td>\n",
+       "      <td>['https://images-na.ssl-images-amazon.com/imag...</td>\n",
+       "      <td>Parker</td>\n",
+       "      <td>['Ebony black with metallic highlights and a g...</td>\n",
+       "      <td>Office_Products</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>2018-01-01</td>\n",
+       "      <td>I love this pen</td>\n",
+       "      <td>I love this pen! I love the shape of it, the f...</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "          userName  verified  \\\n",
+       "0  Amazon Customer      True   \n",
+       "1            Carla      True   \n",
+       "2           Jaclyn      True   \n",
+       "3     Christinne M     False   \n",
+       "4            Sandy      True   \n",
+       "\n",
+       "                                            itemName  \\\n",
+       "0  Toblerone Swiss Milk Chocolate Bar, Crunchy Sa...   \n",
+       "1  Prince of Peace Organic Tea, Oolong, 100 Tea Bags   \n",
+       "2  Pet Champion Adjustable No-Pull Harness, Colla...   \n",
+       "3  Koh-I-Noor Progresso Woodless Colored 24-Penci...   \n",
+       "4  Parker Urban Premium Ebony Metal Chiseled, Bal...   \n",
+       "\n",
+       "                                         description  \\\n",
+       "0  [\"Made from deliciously decadent ingredients, ...   \n",
+       "1  ['Prince of Peace Enterprises, Inc., founded i...   \n",
+       "2  [\"The Pet Champion Large/ Extra Large 22-36 in...   \n",
+       "3  ['Koh-I-Noor Progresso Woodless Colored 24-Pen...   \n",
+       "4  [\"Stunning craftsmanship based on a classic st...   \n",
+       "\n",
+       "                                               image            brand  \\\n",
+       "0  ['https://images-na.ssl-images-amazon.com/imag...        Toblerone   \n",
+       "1  ['https://images-na.ssl-images-amazon.com/imag...  Prince Of Peace   \n",
+       "2  ['https://images-na.ssl-images-amazon.com/imag...     Pet Champion   \n",
+       "3  ['https://images-na.ssl-images-amazon.com/imag...       KOH-I-NOOR   \n",
+       "4  ['https://images-na.ssl-images-amazon.com/imag...           Parker   \n",
+       "\n",
+       "                                             feature  \\\n",
+       "0                                                 []   \n",
+       "1                                                 []   \n",
+       "2  ['Features Bright Pink Lemonade pattern', 'Dua...   \n",
+       "3  ['Rich, pigmented, solid color encased in lacq...   \n",
+       "4  ['Ebony black with metallic highlights and a g...   \n",
+       "\n",
+       "                   category   price  rating  reviewTime  \\\n",
+       "0              Prime_Pantry   $1.63     5.0  2018-01-01   \n",
+       "1  Grocery_and_Gourmet_Food   $6.40     5.0  2018-01-01   \n",
+       "2              Pet_Supplies   $7.99     5.0  2018-01-01   \n",
+       "3    Arts_Crafts_and_Sewing  $14.18     5.0  2018-01-01   \n",
+       "4           Office_Products     NaN     5.0  2018-01-01   \n",
+       "\n",
+       "                                             summary  \\\n",
+       "0                                         Five Stars   \n",
+       "1                                         Five Stars   \n",
+       "2  she has an odd shape chest and her pull over h...   \n",
+       "3                                           Loving!!   \n",
+       "4                                    I love this pen   \n",
+       "\n",
+       "                                          reviewText  vote  \n",
+       "0           super smooth and yummy with crunchy bits     0  \n",
+       "1                               Perfect for kombucha     0  \n",
+       "2  Finally a harness that fits my puppy. I really...     0  \n",
+       "3  I LOVE THEM!! I bought them at Micheals our of...     0  \n",
+       "4  I love this pen! I love the shape of it, the f...     0  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = pd.read_csv(\"/kaggle/input/amazon-review/amazon_reviews.csv\")\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "7b4541a2",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:17.321261Z",
+     "iopub.status.busy": "2025-07-22T10:22:17.321033Z",
+     "iopub.status.idle": "2025-07-22T10:22:17.325467Z",
+     "shell.execute_reply": "2025-07-22T10:22:17.324801Z"
+    },
+    "papermill": {
+     "duration": 0.01046,
+     "end_time": "2025-07-22T10:22:17.326498",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:17.316038",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(551159, 14)"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "23946776",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:17.335929Z",
+     "iopub.status.busy": "2025-07-22T10:22:17.335729Z",
+     "iopub.status.idle": "2025-07-22T10:22:17.690986Z",
+     "shell.execute_reply": "2025-07-22T10:22:17.690082Z"
+    },
+    "papermill": {
+     "duration": 0.361277,
+     "end_time": "2025-07-22T10:22:17.692222",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:17.330945",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "userName         133\n",
+       "verified           0\n",
+       "itemName           1\n",
+       "description        8\n",
+       "image              0\n",
+       "brand           3872\n",
+       "feature            0\n",
+       "category           0\n",
+       "price          74334\n",
+       "rating             0\n",
+       "reviewTime         0\n",
+       "summary          243\n",
+       "reviewText       428\n",
+       "vote               0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "ab81411c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:17.706752Z",
+     "iopub.status.busy": "2025-07-22T10:22:17.706525Z",
+     "iopub.status.idle": "2025-07-22T10:22:17.900389Z",
+     "shell.execute_reply": "2025-07-22T10:22:17.899584Z"
+    },
+    "papermill": {
+     "duration": 0.201387,
+     "end_time": "2025-07-22T10:22:17.901938",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:17.700551",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df = df[df.reviewText.notnull()]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "ed7a9b00",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:17.912052Z",
+     "iopub.status.busy": "2025-07-22T10:22:17.911827Z",
+     "iopub.status.idle": "2025-07-22T10:22:34.646991Z",
+     "shell.execute_reply": "2025-07-22T10:22:34.646214Z"
+    },
+    "papermill": {
+     "duration": 16.741599,
+     "end_time": "2025-07-22T10:22:34.648313",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:17.906714",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "review_text = df.reviewText.apply(gensim.utils.simple_preprocess)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "aeb71de8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:34.658539Z",
+     "iopub.status.busy": "2025-07-22T10:22:34.658315Z",
+     "iopub.status.idle": "2025-07-22T10:22:34.665624Z",
+     "shell.execute_reply": "2025-07-22T10:22:34.665094Z"
+    },
+    "papermill": {
+     "duration": 0.013389,
+     "end_time": "2025-07-22T10:22:34.666598",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:34.653209",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0          [super, smooth, and, yummy, with, crunchy, bits]\n",
+       "1                                  [perfect, for, kombucha]\n",
+       "2         [finally, harness, that, fits, my, puppy, real...\n",
+       "3         [love, them, bought, them, at, micheals, our, ...\n",
+       "4         [love, this, pen, love, the, shape, of, it, th...\n",
+       "                                ...                        \n",
+       "551154                     [cheap, price, but, weak, chain]\n",
+       "551155                                   [great, deck, box]\n",
+       "551156    [putting, these, in, my, weather, station, ant...\n",
+       "551157    [this, is, nice, quality, grilling, table, whe...\n",
+       "551158    [this, is, nice, variety, pack, for, the, whol...\n",
+       "Name: reviewText, Length: 550731, dtype: object"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "review_text"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "bbb05124",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:34.676483Z",
+     "iopub.status.busy": "2025-07-22T10:22:34.676108Z",
+     "iopub.status.idle": "2025-07-22T10:22:34.698691Z",
+     "shell.execute_reply": "2025-07-22T10:22:34.698034Z"
+    },
+    "papermill": {
+     "duration": 0.028751,
+     "end_time": "2025-07-22T10:22:34.699881",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:34.671130",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['super', 'smooth', 'and', 'yummy', 'with', 'crunchy', 'bits']"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "review_text.loc[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "ca34ac4b",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:34.711092Z",
+     "iopub.status.busy": "2025-07-22T10:22:34.710849Z",
+     "iopub.status.idle": "2025-07-22T10:22:34.715609Z",
+     "shell.execute_reply": "2025-07-22T10:22:34.714962Z"
+    },
+    "papermill": {
+     "duration": 0.011605,
+     "end_time": "2025-07-22T10:22:34.716710",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:34.705105",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'super smooth and yummy with crunchy bits'"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.reviewText.loc[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "17554c6f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:34.728835Z",
+     "iopub.status.busy": "2025-07-22T10:22:34.728575Z",
+     "iopub.status.idle": "2025-07-22T10:22:34.732911Z",
+     "shell.execute_reply": "2025-07-22T10:22:34.732308Z"
+    },
+    "papermill": {
+     "duration": 0.011832,
+     "end_time": "2025-07-22T10:22:34.734048",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:34.722216",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model = gensim.models.Word2Vec(\n",
+    "    window=5,\n",
+    "    min_count=2,\n",
+    "    workers=10,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "1a96684f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:34.745602Z",
+     "iopub.status.busy": "2025-07-22T10:22:34.745380Z",
+     "iopub.status.idle": "2025-07-22T10:22:37.853654Z",
+     "shell.execute_reply": "2025-07-22T10:22:37.853008Z"
+    },
+    "papermill": {
+     "duration": 3.115507,
+     "end_time": "2025-07-22T10:22:37.855037",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:34.739530",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model.build_vocab(review_text, progress_per=500)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "0e4266fe",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:22:37.867010Z",
+     "iopub.status.busy": "2025-07-22T10:22:37.866793Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.246205Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.245430Z"
+    },
+    "papermill": {
+     "duration": 233.390635,
+     "end_time": "2025-07-22T10:26:31.252018",
+     "exception": false,
+     "start_time": "2025-07-22T10:22:37.861383",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(250034620, 327959400)"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.train(review_text, total_examples=model.corpus_count, epochs=20)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "11f16c96",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.263530Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.262852Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.268714Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.267882Z"
+    },
+    "papermill": {
+     "duration": 0.013104,
+     "end_time": "2025-07-22T10:26:31.269903",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.256799",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "True"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.corpus_count == len(review_text)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "ad1e1fa7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.281520Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.281323Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.332210Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.331514Z"
+    },
+    "papermill": {
+     "duration": 0.057997,
+     "end_time": "2025-07-22T10:26:31.333458",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.275461",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[('condition', 0.6232609748840332),\n",
+       " ('shapes', 0.48388221859931946),\n",
+       " ('creases', 0.48194968700408936),\n",
+       " ('design', 0.46951013803482056),\n",
+       " ('grooves', 0.4613923728466034),\n",
+       " ('tact', 0.45852115750312805),\n",
+       " ('position', 0.44569888710975647),\n",
+       " ('length', 0.4447036683559418),\n",
+       " ('triangle', 0.44266900420188904),\n",
+       " ('structure', 0.4378272294998169)]"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.wv.most_similar(\"shape\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "e54e33f8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.347030Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.346814Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.352011Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.351293Z"
+    },
+    "papermill": {
+     "duration": 0.012413,
+     "end_time": "2025-07-22T10:26:31.353154",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.340741",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.7835471"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.wv.similarity('great', 'awesome')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "21ddc540",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.364017Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.363808Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.368816Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.368016Z"
+    },
+    "papermill": {
+     "duration": 0.011653,
+     "end_time": "2025-07-22T10:26:31.369897",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.358244",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.80574024"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.wv.similarity(\"good\",\"great\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "71095daf",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.380980Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.380771Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.386577Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.385944Z"
+    },
+    "papermill": {
+     "duration": 0.012475,
+     "end_time": "2025-07-22T10:26:31.387638",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.375163",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[('omg', 0.7642220854759216)]\n"
+     ]
+    }
+   ],
+   "source": [
+    "top_synonym = model.wv.most_similar('wow', topn=1)\n",
+    "print(top_synonym)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "c2cf210c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.398404Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.398210Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.482230Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.481240Z"
+    },
+    "papermill": {
+     "duration": 0.090952,
+     "end_time": "2025-07-22T10:26:31.483704",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.392752",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model.save(\"word2vec_model.model\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "9c51638c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-07-22T10:26:31.496716Z",
+     "iopub.status.busy": "2025-07-22T10:26:31.496504Z",
+     "iopub.status.idle": "2025-07-22T10:26:31.499757Z",
+     "shell.execute_reply": "2025-07-22T10:26:31.499034Z"
+    },
+    "papermill": {
+     "duration": 0.010142,
+     "end_time": "2025-07-22T10:26:31.500901",
+     "exception": false,
+     "start_time": "2025-07-22T10:26:31.490759",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# from gensim.models import Word2Vec\n",
+    "\n",
+    "# # Load the full model\n",
+    "# model = Word2Vec.load(\"word2vec_model.model\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "nvidiaTeslaT4",
+   "dataSources": [
+    {
+     "datasetId": 7918807,
+     "sourceId": 12542882,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 31090,
+   "isGpuEnabled": true,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 322.552278,
+   "end_time": "2025-07-22T10:26:34.122585",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2025-07-22T10:21:11.570307",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
